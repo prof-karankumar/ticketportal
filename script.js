@@ -4,10 +4,10 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Olfff104V9bCod1UkTbwyA_VgMLB3IE';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const dashboardData = {
-    totalActive: 47,
-    totalBroadcasted: 32,
-    totalUnbroadcasted: 15,
-    upcoming: 8
+    totalActive: 0,
+    totalBroadcasted: 0,
+    totalUnbroadcasted: 0,
+    upcoming: 0
 };
 
 const LOGIN_USERNAME = "karan";
@@ -35,7 +35,35 @@ function toggleTheme() {
     }
 }
 
-function updateDashboard() {
+// Supabase se data fetch karke dashboard update karne ka function
+async function fetchAndCalculateDashboard() {
+    const { data, error } = await _supabase.from('events').select('*');
+
+    if (error) {
+        console.error("Error fetching events from Supabase:", error.message);
+        return;
+    }
+
+    // Reset counts
+    dashboardData.totalActive = data.length;
+    dashboardData.totalBroadcasted = data.filter(e => e.event_status === 'Broadcasted').length;
+    dashboardData.totalUnbroadcasted = data.filter(e => e.event_status === 'Unbroadcasted').length;
+    
+    // Upcoming calculation (next 3 days)
+    const now = new Date();
+    const threeDaysLater = new Date();
+    threeDaysLater.setDate(now.getDate() + 3);
+
+    dashboardData.upcoming = data.filter(e => {
+        if (!e.event_start_time) return false;
+        const eventDate = new Date(e.event_start_time);
+        return eventDate >= now && eventDate <= threeDaysLater;
+    }).length;
+
+    updateDashboardUI();
+}
+
+function updateDashboardUI() {
     const titles = [
         `Total Active Events: ${dashboardData.totalActive}`,
         `Total Broadcasted: ${dashboardData.totalBroadcasted}`,
@@ -81,7 +109,7 @@ function loginUser() {
         element.removeAttribute("disabled");
     });
 
-    updateDashboard();
+    fetchAndCalculateDashboard();
 }
 
 function logoutUser() {
@@ -160,7 +188,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    eventForm.addEventListener("submit", event => {
+    // Form submission to Supabase Database
+    eventForm.addEventListener("submit", async event => {
         event.preventDefault();
 
         if (!isLoggedIn) {
@@ -169,21 +198,47 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const eventName = document.getElementById("eventName").value;
+        const eventMappingID = document.getElementById("eventMappingID").value;
+        const venueName = document.getElementById("venueName").value;
+        const eventID = document.getElementById("eventID").value;
+        const eventStartTime = document.getElementById("eventStartTime").value;
+        const transferDate = document.getElementById("transferDate").value;
+        const listCost = document.getElementById("listCost").value;
         const eventStatus = document.getElementById("eventStatus").value;
+        const eventURL = document.getElementById("eventURL").value;
+        const eventimageURL = document.getElementById("eventimageURL").value;
 
-        dashboardData.totalActive++;
+        // Supabase me insert karne ka object
+        const newEventData = {
+            event_name: eventName,
+            event_mapping_id: eventMappingID,
+            venue_name: venueName,
+            event_id: eventID,
+            event_start_time: eventStartTime,
+            transfer_date: transferDate,
+            list_cost_percentage: parseFloat(listCost),
+            event_status: eventStatus,
+            event_url: eventURL,
+            event_image_url: eventimageURL
+        };
 
-        if (eventStatus === "Broadcasted") {
-            dashboardData.totalBroadcasted++;
-        } else if (eventStatus === "Unbroadcasted") {
-            dashboardData.totalUnbroadcasted++;
+        const { data, error } = await _supabase
+            .from('events')
+            .insert([newEventData]);
+
+        if (error) {
+            console.error("Error saving event:", error.message);
+            alert("Failed to save event to database: " + error.message);
+            return;
         }
 
-        updateDashboard();
+        // Refresh dashboard numbers from Supabase
+        await fetchAndCalculateDashboard();
+        
         eventForm.reset();
         eventModal.style.display = "none";
 
-        alert(`Success! Event "${eventName}" has been added.`);
+        alert(`Success! Event "${eventName}" has been added and saved to Supabase.`);
     });
 
     document.querySelectorAll(".protected-link").forEach(link => {
@@ -196,5 +251,5 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    updateDashboard();
+    fetchAndCalculateDashboard();
 });
