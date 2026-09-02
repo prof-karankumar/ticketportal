@@ -1,3 +1,8 @@
+const SUPABASE_URL = 'https://zftjzlootkvnquwiwsic.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Olfff104V9bCod1UkTbwyA_VgMLB3IE';
+
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const dashboardData = {
     totalActive: 47,
     totalBroadcasted: 32,
