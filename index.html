@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <h1>🎫 TicketPortal</h1>
+
+        <div class="nav-links">
+            <a href="#" class="protected-link">Home</a>
+            <a href="#" class="protected-link">Events</a>
+            <a href="#" id="addEventNavBtn" class="protected-link">Add</a>
+            <a href="#" id="loginBtn" class="login-btn">Login</a>
+
+            <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="search-wrapper">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Search concerts, sports, arts...">
+        </div>
+
+        <button id="searchBtn">
+            <i class="fas fa-search"></i>
+            Search
+        </button>
+    </div>
+
+    <!-- Dashboard Title -->
+    <div class="dashboard-title">
+        <h1>EVENTS DATA</h1>
+    </div>
+
+    <!-- Cards Container -->
+    <div class="container">
+        <div class="card">
+            <h2>Loading...</h2>
+        </div>
+
+        <div class="card">
+            <h2>Loading...</h2>
+        </div>
+
+        <div class="card">
+            <h2>Loading...</h2>
+        </div>
+
+        <div class="card">
+            <h2>Loading...</h2>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-lock"></i> Login Portal</h2>
+            </div>
+
+            <p class="modal-subtitle">
+                Please login to access the Event Portal.
+            </p>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input
+                        type="text"
+                        id="username"
+                        placeholder="Enter username"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Enter password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <p id="loginError" style="color: #ff5555; margin-top: 1rem; display: none;">
+                    Invalid username or password.
+                </p>
+
+                <button type="submit" class="submit-event-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Event Modal -->
+    <div id="eventModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Event</h2>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+
+            <p class="modal-subtitle">
+                Fill in the details below to add a new event to the system.
+            </p>
+
+            <form id="eventForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Event Name *</label>
+                        <input type="text" id="eventName" placeholder="Enter event name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Event Mapping ID *</label>
+                        <input type="text" id="eventMappingID" placeholder="Enter event mapping ID" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Venue Name *</label>
+                        <input type="text" id="venueName" placeholder="Enter venue name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Event ID *</label>
+                        <input type="text" id="eventID" placeholder="Enter event ID" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Event Start Time *</label>
+                        <input type="datetime-local" id="eventStartTime" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Transfer Date *</label>
+                        <input type="date" id="transferDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>List Cost Percentage *</label>
+                        <input type="number" id="listCost" placeholder="Enter list cost %" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Event Status *</label>
+                        <select id="eventStatus" required>
+                            <option value="">Select status</option>
+                            <option value="Active">Active</option>
+                            <option value="Broadcasted">Broadcasted</option>
+                            <option value="Unbroadcasted">Unbroadcasted</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Event URL *</label>
+                    <input type="url" id="eventURL" placeholder="https://..." required>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Event Image URL *</label>
+                    <input type="url" id="eventimageURL" placeholder="https://..." required>
+                </div>
+
+                <button type="submit" class="submit-event-btn">
+                    Add Event
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
