@@ -18,7 +18,7 @@
 
 body.light-mode {
     --bg-color: #FFFFFF;
-    --text-color: #FFFFFF;
+    --text-color: #000000;
     --card-bg: rgba(0,0,0,0.05);
     --card-border: rgba(0,0,0,0.1);
     --input-bg: rgba(0,0,0,0.05);
@@ -53,9 +53,7 @@ body {
 
 .navbar h1 {
     font-size: 1.8rem;
-    background: linear-gradient(135deg, #fffffF , #ffffff, var(--text-color));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #ffffff; 
     font-weight: 700;
 }
 
@@ -65,7 +63,7 @@ body {
 }
 
 .nav-links a {
-    color: var(--text-color);
+    color: #ffffff; 
     text-decoration: none;
     margin-left: 2rem;
     font-size: 0.95rem;
@@ -74,21 +72,28 @@ body {
 }
 
 .nav-links a:hover {
-    color: #026CDF;
+    color: #e0e0e0; 
     transform: translateY(-1px);
 }
 
 .login-btn {
-    background: #000000, var(--text-color));
+    background: linear-gradient(135deg, #026CDF, #024DDF); /* Ye Black se Blue kar diya */
+    border: 1px solid #ffffff; /* Border add kiya taake blue background pe chhup na jaye */
     color: #FFFFFF !important;
     padding: 0.5rem 1.5rem;
     border-radius: 50px;
     font-weight: 600;
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .login-btn:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 5px 20px rgba(251, 251, 251, 0.4);
+    transform: translateY(-4px) scale(1.05) !important; /* Thora aur uper aur bara hoga */
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.4);
+}
+
+.login-btn:active {
+    transform: translateY(1px) scale(0.95) !important; /* Click karnay per dabnay ka effect */
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
 }
 
 /* Theme Toggle */
@@ -98,7 +103,7 @@ body {
     border-radius: 50%;
     border: 1px solid var(--nav-border);
     background: var(--card-bg);
-    color: var(--text-color);
+    color: #ffffff; 
     cursor: pointer;
     margin-left: 2rem;
     display: flex;
@@ -110,8 +115,8 @@ body {
 
 .theme-toggle:hover {
     transform: scale(1.1);
-    border-color: #026CDF;
-    box-shadow: 0 0 15px rgba(2,108,223,0.3);
+    border-color: #ffffff;
+    box-shadow: 0 0 15px rgba(255,255,255,0.3);
 }
 
 /* DASHBOARD TITLE */
@@ -191,8 +196,13 @@ body {
 }
 
 .controls button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 20px rgba(2,108,223,0.4);
+    transform: translateY(-4px) scale(1.05); /* Thora aur uper aur bara hoga */
+    box-shadow: 0 8px 25px rgba(2,108,223,0.5);
+}
+
+.controls button:active {
+    transform: translateY(1px) scale(0.95); /* Click karnay per dabnay ka effect */
+    box-shadow: 0 3px 10px rgba(2,108,223,0.3);
 }
 
 .controls button i {
@@ -267,18 +277,10 @@ body {
 }
 
 /* Card Background Images */
-.card:nth-child(1) {
-    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmM8P5uvVCt-8ZlBmd2qmlJK-C7RpM07uW06KF_uMeKA&s=10');
-}
-.card:nth-child(2) {
-    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmM8P5uvVCt-8ZlBmd2qmlJK-C7RpM07uW06KF_uMeKA&s=10');
-}
-.card:nth-child(3) {
-    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmM8P5uvVCt-8ZlBmd2qmlJK-C7RpM07uW06KF_uMeKA&s=10');
-}
-.card:nth-child(4) {
-    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmM8P5uvVCt-8ZlBmd2qmlJK-C7RpM07uW06KF_uMeKA&s=10');
-}
+.card:nth-child(1) { background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmM8P5uvVCt-8ZlBmd2qmlJK-C7RpM07uW06KF_uMeKA&s=10'); }
+.card:nth-child(2) { background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmM8P5uvVCt-8ZlBmd2qmlJK-C7RpM07uW06KF_uMeKA&s=10'); }
+.card:nth-child(3) { background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmM8P5uvVCt-8ZlBmd2qmlJK-C7RpM07uW06KF_uMeKA&s=10'); }
+.card:nth-child(4) { background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmM8P5uvVCt-8ZlBmd2qmlJK-C7RpM07uW06KF_uMeKA&s=10'); }
 
 /* Modal Styling */
 .modal-overlay {
@@ -395,8 +397,13 @@ body {
 }
 
 .submit-event-btn:hover {
-    transform: scale(1.02);
-    box-shadow: 0 5px 20px rgba(2, 108, 223, 0.4);
+    transform: translateY(-4px) scale(1.05); /* Thora aur uper aur bara hoga */
+    box-shadow: 0 8px 25px rgba(2, 108, 223, 0.5);
+}
+
+.submit-event-btn:active {
+    transform: translateY(1px) scale(0.95); /* Click karnay per dabnay ka effect */
+    box-shadow: 0 3px 10px rgba(2, 108, 223, 0.3);
 }
 
 /* Animation */
