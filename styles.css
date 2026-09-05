@@ -18,7 +18,7 @@
 
 body.light-mode {
     --bg-color: #FFFFFF;
-    --text-color: ##000000;
+    --text-color: #000000;
     --card-bg: rgba(0,0,0,0.05);
     --card-border: rgba(0,0,0,0.1);
     --input-bg: rgba(0,0,0,0.05);
