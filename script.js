@@ -4,7 +4,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Olfff104V9bCod1UkTbwyA_VgMLB3IE';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const dashboardData = {
-    totalActive: 0,
+    totalAll: 0,
     totalBroadcasted: 0,
     totalUnbroadcasted: 0,
     upcoming: 0
@@ -15,12 +15,19 @@ const LOGIN_PASSWORD = "kumar";
 
 let isLoggedIn = false;
 
-function toggleTheme() {
-    if (!isLoggedIn) {
-        alert("Please login first.");
-        return;
+// Check saved login state on page load
+function checkSavedLogin() {
+    const savedLogin = localStorage.getItem("isLoggedIn");
+    if (savedLogin === "true") {
+        isLoggedIn = true;
+        document.getElementById("loginBtn").textContent = "Logout";
+        document.getElementById("loginModal").style.display = "none";
+        return true;
     }
+    return false;
+}
 
+function toggleTheme() {
     const body = document.body;
     const toggleIcon = document.querySelector(".theme-toggle i");
 
@@ -44,8 +51,8 @@ async function fetchAndCalculateDashboard() {
         return;
     }
 
-    // Reset counts
-    dashboardData.totalActive = data.length;
+    // Total Active Events card = tamam (total) events, chahe status koi bhi ho
+    dashboardData.totalAll = data.length;
     dashboardData.totalBroadcasted = data.filter(e => e.event_status === 'Broadcasted').length;
     dashboardData.totalUnbroadcasted = data.filter(e => e.event_status === 'Unbroadcasted').length;
     
@@ -65,14 +72,14 @@ async function fetchAndCalculateDashboard() {
 
 function updateDashboardUI() {
     const titles = [
-        `Total Active Events: ${dashboardData.totalActive}`,
+        `Total Events: ${dashboardData.totalAll}`,
         `Total Broadcasted: ${dashboardData.totalBroadcasted}`,
         `Total Unbroadcasted: ${dashboardData.totalUnbroadcasted}`,
         `Upcoming (3 Days): ${dashboardData.upcoming}`
     ];
 
     const numbers = [
-        dashboardData.totalActive,
+        dashboardData.totalAll,
         dashboardData.totalBroadcasted,
         dashboardData.totalUnbroadcasted,
         dashboardData.upcoming
@@ -86,49 +93,178 @@ function updateDashboardUI() {
     });
 }
 
-function searchCards() {
-    const searchTerm = document
-        .getElementById("searchInput")
-        .value
-        .trim()
-        .toLowerCase();
-
-    document.querySelectorAll(".card").forEach(card => {
-        const cardText = card.textContent.toLowerCase();
-        card.style.display = cardText.includes(searchTerm) ? "flex" : "none";
-    });
-}
-
 function loginUser() {
     isLoggedIn = true;
+    localStorage.setItem("isLoggedIn", "true");
 
     document.getElementById("loginModal").style.display = "none";
     document.getElementById("loginBtn").textContent = "Logout";
-
-    document.querySelectorAll("button, input, select, a").forEach(element => {
-        element.removeAttribute("disabled");
-    });
 
     fetchAndCalculateDashboard();
 }
 
 function logoutUser() {
     isLoggedIn = false;
+    localStorage.setItem("isLoggedIn", "false");
 
-    document.getElementById("loginModal").style.display = "flex";
     document.getElementById("loginBtn").textContent = "Login";
     document.getElementById("eventModal").style.display = "none";
 
     document.getElementById("username").value = "";
     document.getElementById("password").value = "";
+
+    // Refresh dashboard with 0 values since user is logged out
+    dashboardData.totalAll = 0;
+    dashboardData.totalBroadcasted = 0;
+    dashboardData.totalUnbroadcasted = 0;
+    dashboardData.upcoming = 0;
+    updateDashboardUI();
+}
+
+function showPortalToast(message, type = "success") {
+    const toast = document.createElement("div");
+    toast.className = `portal-toast ${type}`;
+    toast.innerHTML = `<i class="fas ${type === "success" ? "fa-circle-check" : "fa-circle-exclamation"}"></i><span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add("hide");
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+}
+
+function setupBulkActions() {
+    const toggle = document.getElementById("bulkActionToggle");
+    const menu = document.getElementById("bulkActionMenu");
+    if (!toggle || !menu) return;
+
+    toggle.addEventListener("click", () => {
+        const isOpen = menu.classList.toggle("open");
+        toggle.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    document.querySelectorAll("[data-bulk-status]").forEach(button => {
+        button.addEventListener("click", () => {
+            const status = button.dataset.bulkStatus;
+            if (status === "Broadcasted" || status === "Unbroadcasted") {
+                openBulkPasswordModal(status);
+            } else {
+                updateAllEvents(status);
+            }
+        });
+    });
+}
+
+async function updateAllEvents(status) {
+    const { error } = await _supabase
+        .from("events")
+        .update({ event_status: status })
+        .not("id", "is", null);
+
+    if (error) {
+        alert("Bulk update failed: " + error.message);
+        return;
+    }
+
+    showPortalToast(
+        `Successfully ${status === "Broadcasted" ? "broadcasted" : "unbroadcasted"} all events.`,
+        status === "Broadcasted" ? "broadcast-success" : "unbroadcast-success"
+    );
+    fetchAndCalculateDashboard();
+}
+
+function openBulkPasswordModal(status) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay bulk-password-modal";
+    overlay.innerHTML = `
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-lock"></i> Confirm Bulk Action</h2>
+                <button class="close-btn" type="button">&times;</button>
+            </div>
+            <p class="modal-subtitle">Enter the security password to update all events.</p>
+            <form>
+                <div class="form-group">
+                    <label for="bulkPassword">Password</label>
+                    <input type="password" id="bulkPassword" autocomplete="off" required>
+                </div>
+                <p class="bulk-password-error" style="display:none; color:#ff5555; margin-top:1rem;">Invalid password.</p>
+                <button type="submit" class="submit-event-btn"><i class="fas fa-check"></i> Confirm</button>
+            </form>
+        </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector(".close-btn").addEventListener("click", close);
+    overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
+    overlay.querySelector("form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const errorEl = overlay.querySelector(".bulk-password-error");
+        if (overlay.querySelector("#bulkPassword").value !== "aws-atm") {
+            errorEl.style.display = "block";
+            return;
+        }
+        const { error } = await _supabase
+            .from("events")
+            .update({ event_status: status })
+            .not("id", "is", null);
+        if (error) {
+            errorEl.textContent = "Bulk update failed: " + error.message;
+            errorEl.style.display = "block";
+            return;
+        }
+        close();
+        showPortalToast(
+        `Successfully ${status === "Broadcasted" ? "broadcasted" : "unbroadcasted"} all events.`,
+        status === "Broadcasted" ? "broadcast-success" : "unbroadcast-success"
+    );
+        fetchAndCalculateDashboard();
+    });
+}
+
+function setupSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+    const menuButton = document.getElementById("menuToggleBtn");
+    const closeButton = document.getElementById("sidebarCloseBtn");
+
+    if (!sidebar || !overlay || !menuButton) return;
+
+    const closeSidebar = () => {
+        sidebar.classList.remove("open");
+        overlay.classList.remove("open");
+        menuButton.setAttribute("aria-expanded", "false");
+    };
+
+    menuButton.addEventListener("click", () => {
+        sidebar.classList.add("open");
+        overlay.classList.add("open");
+        menuButton.setAttribute("aria-expanded", "true");
+    });
+    closeButton?.addEventListener("click", closeSidebar);
+    overlay.addEventListener("click", closeSidebar);
+
+    document.getElementById("sidebarAddEventBtn")?.addEventListener("click", event => {
+        event.preventDefault();
+        closeSidebar();
+        document.getElementById("addEventNavBtn")?.click();
+    });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    setupSidebar();
+    setupBulkActions();
     const savedTheme = localStorage.getItem("theme");
 
     if (savedTheme === "light") {
         document.body.classList.add("light-mode");
         document.querySelector(".theme-toggle i").className = "fas fa-sun";
+    }
+
+    // Check if user was previously logged in
+    checkSavedLogin();
+
+    // If not logged in, show login modal automatically
+    if (!isLoggedIn) {
+        document.getElementById("loginModal").style.display = "flex";
     }
 
     const loginForm = document.getElementById("loginForm");
@@ -159,8 +295,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    document.getElementById("searchInput").addEventListener("input", searchCards);
-    document.getElementById("searchBtn").addEventListener("click", searchCards);
+    // Make dashboard cards clickable - each card goes to its filtered view
+    document.querySelectorAll(".card").forEach((card, index) => {
+        card.style.cursor = "pointer";
+        card.addEventListener("click", () => {
+            const filterMap = ["all", "broadcasted", "unbroadcasted", "upcoming"];
+            window.location.href = `total-events.html?filter=${filterMap[index]}`;
+        });
+    });
 
     const eventModal = document.getElementById("eventModal");
     const addEventNavBtn = document.getElementById("addEventNavBtn");
@@ -241,15 +383,31 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(`Success! Event "${eventName}" has been added and saved to Supabase.`);
     });
 
-    document.querySelectorAll(".protected-link").forEach(link => {
-        link.addEventListener("click", event => {
+    // Home link - just stay on page, no logout
+    const homeLink = document.querySelector('a[href="#"].protected-link');
+    if (homeLink) {
+        homeLink.addEventListener("click", event => {
             event.preventDefault();
-
-            if (!isLoggedIn) {
-                alert("Please login first.");
-            }
+            // Home is already the current page, do nothing
         });
+    }
+
+    // Use visibilitychange event to refresh data when coming back to tab
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && isLoggedIn) {
+            fetchAndCalculateDashboard();
+        }
     });
 
-    fetchAndCalculateDashboard();
+    // Also refresh on focus
+    window.addEventListener('focus', () => {
+        if (isLoggedIn) {
+            fetchAndCalculateDashboard();
+        }
+    });
+
+    // Initial fetch only if logged in
+    if (isLoggedIn) {
+        fetchAndCalculateDashboard();
+    }
 });
