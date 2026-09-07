@@ -1,10 +1,13 @@
-const SUPABASE_URL = 'https://zftjzlootkvnquwiwsic.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_Olfff104V9bCod1UkTbwyA_VgMLB3IE';
-
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 let allEvents = [];
 let selectedFilter = "";
+
+function getLocalEvents() {
+    return JSON.parse(localStorage.getItem("local_events") || "[]");
+}
+
+function saveLocalEvents(events) {
+    localStorage.setItem("local_events", JSON.stringify(events));
+}
 
 function toggleTheme() {
     document.body.classList.toggle("light-mode");
@@ -68,23 +71,16 @@ function applySelectedFilter(events) {
     return events;
 }
 
-async function fetchAllEvents() {
-    const { data, error } = await _supabase
-        .from("eventss")
-        .select("*")
-        .order("event_start_time", { ascending: false });
+function fetchAllEvents() {
+    const data = getLocalEvents();
 
-    if (error) {
-        console.error("Error fetching events:", error);
-        document.getElementById("eventsGrid").innerHTML = `
-            <div class="card">
-                <h2>Error loading events</h2>
-            </div>
-        `;
-        return;
-    }
+    data.sort((a, b) => {
+        const dateA = new Date(a.event_start_time || 0);
+        const dateB = new Date(b.event_start_time || 0);
+        return dateB - dateA;
+    });
 
-    allEvents = data || [];
+    allEvents = data;
     displayEvents(applySelectedFilter(allEvents));
 }
 
@@ -257,16 +253,9 @@ function setupBulkActions() {
     });
 }
 
-async function updateAllEvents(status) {
-    const { error } = await _supabase
-        .from("eventss")
-        .update({ event_status: status })
-        .not("id", "is", null);
-
-    if (error) {
-        alert("Bulk update failed: " + error.message);
-        return;
-    }
+function updateAllEvents(status) {
+    const events = getLocalEvents().map(e => ({ ...e, event_status: status }));
+    saveLocalEvents(events);
 
     showPortalToast(
         `Successfully ${status === "Broadcasted" ? "broadcasted" : "unbroadcasted"} all events.`,
@@ -283,19 +272,13 @@ function openBulkPasswordModal(status) {
     const close = () => overlay.remove();
     overlay.querySelector(".close-btn").addEventListener("click", close);
     overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
-    overlay.querySelector("form").addEventListener("submit", async event => {
+    overlay.querySelector("form").addEventListener("submit", event => {
         event.preventDefault();
         const errorEl = overlay.querySelector(".bulk-password-error");
         if (overlay.querySelector("#bulkPassword").value !== "aws-atm") { errorEl.style.display = "block"; return; }
-        const { error } = await _supabase
-            .from("eventss")
-            .update({ event_status: status })
-            .not("id", "is", null);
-        if (error) { errorEl.textContent = "Bulk update failed: " + error.message; errorEl.style.display = "block"; return; }
-        close(); showPortalToast(
-        `Successfully ${status === "Broadcasted" ? "broadcasted" : "unbroadcasted"} all events.`,
-        status === "Broadcasted" ? "broadcast-success" : "unbroadcast-success"
-    ); fetchAllEvents();
+        
+        updateAllEvents(status);
+        close();
     });
 }
 
