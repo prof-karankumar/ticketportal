@@ -1,8 +1,3 @@
-const SUPABASE_URL = 'https://zftjzlootkvnquwiwsic.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_Olfff104V9bCod1UkTbwyA_VgMLB3IE';
-
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 let currentEvent = null;
 
 function toggleTheme() {
@@ -36,7 +31,15 @@ function formatDate(value, includeTime = false) {
     );
 }
 
-async function loadEventDetails() {
+function getLocalEvents() {
+    return JSON.parse(localStorage.getItem("local_events") || "[]");
+}
+
+function saveLocalEvents(events) {
+    localStorage.setItem("local_events", JSON.stringify(events));
+}
+
+function loadEventDetails() {
     const eventId = new URLSearchParams(window.location.search).get("id");
 
     if (!eventId) {
@@ -44,14 +47,10 @@ async function loadEventDetails() {
         return;
     }
 
-    const { data, error } = await _supabase
-        .from("events")
-        .select("*")
-        .eq("id", eventId)
-        .single();
+    const events = getLocalEvents();
+    const data = events.find(e => String(e.id) === String(eventId));
 
-    if (error || !data) {
-        console.error("Event loading error:", error);
+    if (!data) {
         showMessage("Event not found.");
         return;
     }
@@ -85,7 +84,7 @@ function renderEventDetails(event) {
         : "";
 
     container.innerHTML = `
-                <div class="event-hero" style="background-image: url('${escapeHTML(imageUrl)}')">
+        <div class="event-hero" style="background-image: url('${escapeHTML(imageUrl)}')">
             <div class="event-hero-content">
                 <h1>${escapeHTML(event.event_name || "Unknown Event")}</h1>
             </div>
@@ -174,29 +173,21 @@ function renderEventDetails(event) {
     `;
 }
 
-async function updateStatus(newStatus) {
+function updateStatus(newStatus) {
     if (!currentEvent) return;
 
-    const { data, error } = await _supabase
-        .from("events")
-        .update({ event_status: newStatus })
-        .eq("id", currentEvent.id)
-        .select("*");
+    const events = getLocalEvents();
+    const index = events.findIndex(e => String(e.id) === String(currentEvent.id));
 
-    if (error) {
-        console.error("Status update error:", error);
-        alert("Status update failed: " + error.message);
+    if (index === -1) {
+        alert("Event not found.");
         return;
     }
 
-    if (!data || data.length === 0) {
-        alert(
-            "Status update nahi hua. Supabase mein UPDATE policy/check permissions verify karein."
-        );
-        return;
-    }
+    events[index].event_status = newStatus;
+    saveLocalEvents(events);
 
-        currentEvent = data[0];
+    currentEvent = events[index];
     renderEventDetails(currentEvent);
 
     showPortalToast(
@@ -205,25 +196,14 @@ async function updateStatus(newStatus) {
     );
 }
 
-async function deleteEvent() {
+function deleteEvent() {
     if (!currentEvent) return;
 
-    const confirmed = confirm(
-        "Are you sure you want to delete this event? This cannot be undone."
-    );
-
+    const confirmed = confirm("Are you sure you want to delete this event? This cannot be undone.");
     if (!confirmed) return;
 
-    const { error } = await _supabase
-        .from("events")
-        .delete()
-        .eq("id", currentEvent.id);
-
-    if (error) {
-        console.error("Delete error:", error);
-        alert("Delete failed: " + error.message);
-        return;
-    }
+    const events = getLocalEvents().filter(e => String(e.id) !== String(currentEvent.id));
+    saveLocalEvents(events);
 
     alert("Event deleted successfully.");
     window.location.href = "total-events.html";
@@ -251,12 +231,8 @@ function openEditModal() {
     document.getElementById("editTransferDate").value =
         currentEvent.transfer_date ? currentEvent.transfer_date.slice(0, 10) : "";
 
-    document.getElementById("editListCost").value =
-        currentEvent.list_cost_percentage ?? "";
-
-    document.getElementById("editEventStatus").value =
-        currentEvent.event_status || "Unbroadcasted";
-
+    document.getElementById("editListCost").value = currentEvent.list_cost_percentage ?? "";
+    document.getElementById("editEventStatus").value = currentEvent.event_status || "Unbroadcasted";
     document.getElementById("editEventURL").value = currentEvent.event_url || "";
     document.getElementById("editEventImageURL").value = currentEvent.event_image_url || "";
 
@@ -291,16 +267,9 @@ function setupBulkActions() {
     });
 }
 
-async function updateAllEvents(status) {
-    const { error } = await _supabase
-        .from("events")
-        .update({ event_status: status })
-        .not("id", "is", null);
-
-    if (error) {
-        alert("Bulk update failed: " + error.message);
-        return;
-    }
+function updateAllEvents(status) {
+    const events = getLocalEvents().map(e => ({ ...e, event_status: status }));
+    saveLocalEvents(events);
 
     showPortalToast(
         `Successfully ${status === "Broadcasted" ? "broadcasted" : "unbroadcasted"} all events.`,
@@ -317,21 +286,13 @@ function openBulkPasswordModal(status) {
     const close = () => overlay.remove();
     overlay.querySelector(".close-btn").addEventListener("click", close);
     overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
-    overlay.querySelector("form").addEventListener("submit", async event => {
+    overlay.querySelector("form").addEventListener("submit", event => {
         event.preventDefault();
         const errorEl = overlay.querySelector(".bulk-password-error");
         if (overlay.querySelector("#bulkPassword").value !== "aws-atm") { errorEl.style.display = "block"; return; }
-        const { error } = await _supabase
-            .from("events")
-            .update({ event_status: status })
-            .not("id", "is", null);
-        if (error) { errorEl.textContent = "Bulk update failed: " + error.message; errorEl.style.display = "block"; return; }
+        
+        updateAllEvents(status);
         close();
-        showPortalToast(
-            `Successfully ${status === "Broadcasted" ? "broadcasted" : "unbroadcasted"} all events.`,
-            status === "Broadcasted" ? "broadcast-success" : "unbroadcast-success"
-        );
-        loadEventDetails();
     });
 }
 
@@ -370,12 +331,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     loadEventDetails();
 
-    document.getElementById("editForm").addEventListener("submit", async event => {
+    document.getElementById("editForm").addEventListener("submit", event => {
         event.preventDefault();
 
         if (!currentEvent) return;
 
         const updatedData = {
+            ...currentEvent,
             event_name: document.getElementById("editEventName").value.trim(),
             event_mapping_id: document.getElementById("editEventMappingID").value.trim(),
             venue_name: document.getElementById("editVenueName").value.trim(),
@@ -388,26 +350,15 @@ document.addEventListener("DOMContentLoaded", () => {
             event_image_url: document.getElementById("editEventImageURL").value.trim()
         };
 
-        const { data, error } = await _supabase
-            .from("events")
-            .update(updatedData)
-            .eq("id", currentEvent.id)
-            .select("*");
+        const events = getLocalEvents();
+        const index = events.findIndex(e => String(e.id) === String(currentEvent.id));
 
-        if (error) {
-            console.error("Event update error:", error);
-            alert("Event update failed: " + error.message);
-            return;
+        if (index !== -1) {
+            events[index] = updatedData;
+            saveLocalEvents(events);
+            currentEvent = updatedData;
         }
 
-        if (!data || data.length === 0) {
-            alert(
-                "Event update nahi hua. Supabase mein UPDATE policy/check permissions verify karein."
-            );
-            return;
-        }
-
-        currentEvent = data[0];
         document.getElementById("editModal").style.display = "none";
         renderEventDetails(currentEvent);
         alert("Event updated successfully.");
