@@ -70,7 +70,7 @@ function applySelectedFilter(events) {
 
 async function fetchAllEvents() {
     const { data, error } = await _supabase
-        .from("events")
+        .from("eventss")
         .select("*")
         .order("event_start_time", { ascending: false });
 
@@ -259,7 +259,7 @@ function setupBulkActions() {
 
 async function updateAllEvents(status) {
     const { error } = await _supabase
-        .from("events")
+        .from("eventss")
         .update({ event_status: status })
         .not("id", "is", null);
 
@@ -288,7 +288,7 @@ function openBulkPasswordModal(status) {
         const errorEl = overlay.querySelector(".bulk-password-error");
         if (overlay.querySelector("#bulkPassword").value !== "aws-atm") { errorEl.style.display = "block"; return; }
         const { error } = await _supabase
-            .from("events")
+            .from("eventss")
             .update({ event_status: status })
             .not("id", "is", null);
         if (error) { errorEl.textContent = "Bulk update failed: " + error.message; errorEl.style.display = "block"; return; }
