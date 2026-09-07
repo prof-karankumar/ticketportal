@@ -1,4 +1,4 @@
-const SUPABASE_URL = 'https://zftjzlootkvnquwiwsic.supabase.co/rest/v1/eventss';
+const SUPABASE_URL = 'https://zftjzlootkvnquwiwsic.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_Olfff104V9bCod1UkTbwyA_VgMLB3IE';
 
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -15,7 +15,6 @@ const LOGIN_PASSWORD = "kumar";
 
 let isLoggedIn = false;
 
-// Check saved login state on page load
 function checkSavedLogin() {
     const savedLogin = localStorage.getItem("isLoggedIn");
     if (savedLogin === "true") {
@@ -42,21 +41,18 @@ function toggleTheme() {
     }
 }
 
-// Supabase se data fetch karke dashboard update karne ka function
 async function fetchAndCalculateDashboard() {
-    const { data, error } = await _supabase.from('events').select('*');
+    const { data, error } = await _supabase.from('eventss').select('*');
 
     if (error) {
         console.error("Error fetching events from Supabase:", error.message);
         return;
     }
 
-    // Total Active Events card = tamam (total) events, chahe status koi bhi ho
     dashboardData.totalAll = data.length;
     dashboardData.totalBroadcasted = data.filter(e => e.event_status === 'Broadcasted').length;
     dashboardData.totalUnbroadcasted = data.filter(e => e.event_status === 'Unbroadcasted').length;
-    
-    // Upcoming calculation (next 3 days)
+
     const now = new Date();
     const threeDaysLater = new Date();
     threeDaysLater.setDate(now.getDate() + 3);
@@ -113,7 +109,6 @@ function logoutUser() {
     document.getElementById("username").value = "";
     document.getElementById("password").value = "";
 
-    // Refresh dashboard with 0 values since user is logged out
     dashboardData.totalAll = 0;
     dashboardData.totalBroadcasted = 0;
     dashboardData.totalUnbroadcasted = 0;
@@ -156,7 +151,7 @@ function setupBulkActions() {
 
 async function updateAllEvents(status) {
     const { error } = await _supabase
-        .from("events")
+        .from("eventss")
         .update({ event_status: status })
         .not("id", "is", null);
 
@@ -203,7 +198,7 @@ function openBulkPasswordModal(status) {
             return;
         }
         const { error } = await _supabase
-            .from("events")
+            .from("eventss")
             .update({ event_status: status })
             .not("id", "is", null);
         if (error) {
@@ -213,9 +208,9 @@ function openBulkPasswordModal(status) {
         }
         close();
         showPortalToast(
-        `Successfully ${status === "Broadcasted" ? "broadcasted" : "unbroadcasted"} all events.`,
-        status === "Broadcasted" ? "broadcast-success" : "unbroadcast-success"
-    );
+            `Successfully ${status === "Broadcasted" ? "broadcasted" : "unbroadcasted"} all events.`,
+            status === "Broadcasted" ? "broadcast-success" : "unbroadcast-success"
+        );
         fetchAndCalculateDashboard();
     });
 }
@@ -259,10 +254,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelector(".theme-toggle i").className = "fas fa-sun";
     }
 
-    // Check if user was previously logged in
     checkSavedLogin();
 
-    // If not logged in, show login modal automatically
     if (!isLoggedIn) {
         document.getElementById("loginModal").style.display = "flex";
     }
@@ -295,7 +288,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Make dashboard cards clickable - each card goes to its filtered view
     document.querySelectorAll(".card").forEach((card, index) => {
         card.style.cursor = "pointer";
         card.addEventListener("click", () => {
@@ -330,7 +322,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Form submission to Supabase Database
     eventForm.addEventListener("submit", async event => {
         event.preventDefault();
 
@@ -350,7 +341,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const eventURL = document.getElementById("eventURL").value;
         const eventimageURL = document.getElementById("eventimageURL").value;
 
-        // Supabase me insert karne ka object
         const newEventData = {
             event_name: eventName,
             event_mapping_id: eventMappingID,
@@ -365,7 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         const { data, error } = await _supabase
-            .from('events')
+            .from('eventss')
             .insert([newEventData]);
 
         if (error) {
@@ -374,7 +364,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Refresh dashboard numbers from Supabase
         await fetchAndCalculateDashboard();
         
         eventForm.reset();
@@ -383,30 +372,25 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(`Success! Event "${eventName}" has been added and saved to Supabase.`);
     });
 
-    // Home link - just stay on page, no logout
     const homeLink = document.querySelector('a[href="#"].protected-link');
     if (homeLink) {
         homeLink.addEventListener("click", event => {
             event.preventDefault();
-            // Home is already the current page, do nothing
         });
     }
 
-    // Use visibilitychange event to refresh data when coming back to tab
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden && isLoggedIn) {
             fetchAndCalculateDashboard();
         }
     });
 
-    // Also refresh on focus
     window.addEventListener('focus', () => {
         if (isLoggedIn) {
             fetchAndCalculateDashboard();
         }
     });
 
-    // Initial fetch only if logged in
     if (isLoggedIn) {
         fetchAndCalculateDashboard();
     }
